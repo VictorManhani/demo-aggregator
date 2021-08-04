@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/os 
+		http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+		http://www.mulesoft.org/schema/mule/http 
+		http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+		http://www.mulesoft.org/schema/mule/ee/core 
+		http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+		http://www.mulesoft.org/schema/mule/core 
+		http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+	">
+
+	<flow name="add_func" doc:id="18095080-5d23-4833-8b46-0ea21820bef2" >
+		<http:listener doc:name="POST /api/func" doc:id="41c1a472-eac5-4f29-8362-f959f2421312" config-ref="HTTP_Listener_config" path="/api/func" allowedMethods="POST"/>
+		<flow-ref doc:name="secure-flow" doc:id="b48b1741-5087-4c7f-975b-14ec6ea08644" name="secure-flow"/>
+		<os:retrieve-all-keys doc:name="of Func" doc:id="158a0343-19b7-450a-b356-4fb8078485ba" objectStore="Table_Func" target="func_keys" />
+		<foreach doc:name="For Each Func" doc:id="395f7abf-a55e-4dc2-a256-04806712e3a8" collection="#[payload]">
+					<set-variable value="#[output application/java
+&#10;---
+&#10;(payload.Id default (sizeOf(vars.func_keys default 0) + 1) + (vars.nextId default 0))]" doc:name="nextId" doc:id="1bc3275c-c39c-4b2b-bec0-40714c828e6a" variableName="nextId" />
+					<ee:transform doc:name="Mapping Func" doc:id="5e3ba1cb-efb5-4864-9291-6a6659bacedf">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="func"><![CDATA[%dw 2.0
+output application/json
+
+---
+{
+	"Id":  vars.nextId as String,
+	"Profissional": payload.Profissional,
+	"ValorMercado": payload.ValorMercado
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+					<os:store doc:name="Func" doc:id="f4c50b0a-c23f-43ad-82d2-b332fd954743" objectStore="Table_Func" key="#[vars.func.Id]">
+					<os:value><![CDATA[#[vars.func]]]></os:value>
+				</os:store>
+				</foreach>
+		<ee:transform doc:name="Payload to Json" doc:id="75623fc8-0066-47eb-a64d-bd027acbc638">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": sizeOf(payload default []) as String ++ " Funcs Upserted",
+	"Status":  "Success"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+	</flow>
+	
+	<flow name="get-all-funcs" doc:id="97b3f8aa-6c03-46b0-9b1d-3df00fc822f6" >
+		<http:listener doc:name="GET /api/func" doc:id="11ba92f7-f49a-4904-be4c-76e1847432a0" config-ref="HTTP_Listener_config" path="/api/func" allowedMethods="GET"/>
+		<flow-ref doc:name="secure-flow" doc:id="603f588f-1360-4008-ac66-ca8b0d737bab" name="secure-flow" />
+		<os:retrieve-all doc:name="Table_Func" doc:id="1dd247a6-1a82-4c37-bc69-8c68b5389a6e" objectStore="Table_Func"/>
+		<ee:transform doc:name="Payload to Json" doc:id="6a5f38d6-2c38-4953-8082-3777e845c3d7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var payMapped = payload pluck read($, "application/json")
+---
+payMapped]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</flow>
+	
+	<flow name="clear-all-funcs" doc:id="3a099c11-6c50-4d99-8251-22cd9774df52" >
+		<http:listener doc:name="DELETE /api/func" doc:id="c547d46d-9bdc-4873-894b-81e1d4022db5" config-ref="HTTP_Listener_config" path="/api/func" allowedMethods="DELETE"/>
+		<flow-ref doc:name="secure-flow" doc:id="25085808-300e-440c-95cd-f0b26156acc9" name="secure-flow" />
+		<os:retrieve-all-keys doc:name="Table_Func" doc:id="1c02a1ca-fa6d-41d0-bcfa-2b22b57cac48" objectStore="Table_Func" target="func_keys"/>
+		<os:clear doc:name="Table_Func" doc:id="5ede5543-2f9a-409d-b4bf-10e89cc435d6" objectStore="Table_Func"/>
+		<ee:transform doc:name="Payload to Json" doc:id="9efcdf75-e660-4b63-b183-9a2ac6a8f87d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": sizeOf(vars."func_keys" default []) as String ++ " Funcs Deleted",
+	"Status":  "Success"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</flow>
+
+</mule>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/os 
+		http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+		http://www.mulesoft.org/schema/mule/http 
+		http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+		http://www.mulesoft.org/schema/mule/ee/core 
+		http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+		http://www.mulesoft.org/schema/mule/core 
+		http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+			
+	<flow name="aggregator-timer" doc:id="52b48d52-78f2-4b4c-a15d-45a75e1a1496" >
+		<http:listener doc:name="GET /time" doc:id="9a352e40-9450-4b4e-bb59-e055f2571269" config-ref="HTTP_Listener_config" path="/time"/>
+		<ee:transform doc:name="Payload to Json" doc:id="f5c6fe55-b57b-435a-842e-6869d845f31b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:retrieve-all doc:name="Table_Aggregator" doc:id="580c4cb6-f545-4f1e-8841-f758ad35da03" objectStore="Table_Aggregator"/>
+		<logger level="INFO" doc:name="payload" doc:id="84cdeeed-9ced-4391-9c4c-7096811042af" message="#[payload]"/>
+		<ee:transform doc:name="Payload to Json" doc:id="3860f738-33d1-49c2-beef-f4ca8c9f547f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0].asyncAggregationTask.registeringTimestamp]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="e6f0d7da-f4d6-4bf3-a89f-d4070e69bb94" message="#[payload]"/>
+		<ee:transform doc:name="timer" doc:id="960d48dc-fcca-4907-946b-8ceab83ce9f5" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="timer" ><![CDATA[%dw 2.0
+output application/java
+---
+"00:30"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+
+</mule>

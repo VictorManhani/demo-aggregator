@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:aggregators="http://www.mulesoft.org/schema/mule/aggregators" 
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation=" 
+		http://www.mulesoft.org/schema/mule/core 
+		http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/http 
+		http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+		http://www.mulesoft.org/schema/mule/ee/core 
+		http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+		http://www.mulesoft.org/schema/mule/vm 
+		http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+		http://www.mulesoft.org/schema/mule/os 
+		http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+		http://www.mulesoft.org/schema/mule/aggregators 
+		http://www.mulesoft.org/schema/mule/aggregators/current/mule-aggregators.xsd">
+
+	<os:object-store name="Table_Turn" doc:name="Object store" doc:id="de7d6e84-606d-4465-98af-e3127eef1ed9" />
+	<flow name="get-static-resources" doc:id="8c4baa53-3619-4e97-a0f2-21700a6f3283">
+		<http:listener doc:name="GET /*" config-ref="HTTP_Listener_config" path="/*" />
+		<http:load-static-resource doc:name="Load static resource" doc:id="a20529e1-389b-45df-a374-2c08f1ced379" resourceBasePath="www" outputMimeType="text/plain"/>
+	</flow>
+
+	<flow name="index-page" doc:id="61283a21-1213-412a-a45f-3fd75d6519b6" >
+		<http:listener doc:name="GET /index" doc:id="ed93b42e-ae43-4172-9d0c-7fa7947f0a8c" config-ref="HTTP_Listener_config" path="/index" allowedMethods="GET"/>
+		<flow-ref doc:name="get-all-funcs" doc:id="35ead30b-b7af-4899-815e-bc41a4c0c129" name="get-all-funcs" target="funcs"/>
+		<ee:transform doc:name="funcTableRows" doc:id="5fcb4208-6b25-48d6-84af-f4bfd549b84c" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="funcTableRows" ><![CDATA[%dw 2.0
+output application/xml writeDeclaration = false
+
+var tableHeader = [{
+        "th": "Id",
+        "th": "Profissional",
+        "th": "Valor de Mercado"
+    }]
+
+var tableBody = vars.funcs map {
+        "td": $.Id,
+        "td": $.Profissional,
+        "td": $.ValorMercado
+    }
+    
+---
+{"table": {"tr": (tableHeader ++ tableBody)}}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="selectOptionsBody" doc:id="e067895c-5737-4d75-a420-2ccd85d1d857">
+			<ee:message>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="selectOptionsBody" ><![CDATA[%dw 2.0
+output application/xml writeDeclaration = false
+---
+"select" @(id: "selectOptions"): {(
+	vars.funcs map {
+		"option" @(
+			value: $$+1, 
+			idProfissional: ($.Id)
+		): $.Profissional
+	}
+)}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="get-all-winners" doc:id="a48f8519-8fba-4603-b1f6-852ae06d26ea" name="get-all-winners" target="winners"/>
+		<ee:transform doc:name="winnerTableRows" doc:id="c2d87b24-bbca-4484-b2e6-2c8e191bfed3" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="winnerTableRows" ><![CDATA[%dw 2.0
+output application/xml writeDeclaration = false
+
+var tableHeader = [{
+        "th": "Id",
+        "th": "Empresa",
+        "th": "Profissional",
+        "th": "Valor de Mercado"
+    }]
+
+var tableBody = vars.winners map {
+        "td": $.Id,
+        "td": $.Empresa,
+        "td": $.Profissional,
+        "td": $.ValorMercado
+    }
+    
+---
+{"table": {"tr": (tableHeader ++ tableBody)}}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<parse-template doc:name="www\index.html" doc:id="d957191d-e487-4b95-b7ea-435aaa8f6e8a" location="www\index.html">
+		</parse-template>
+	</flow>
+
+	<flow name="bid-process" doc:id="f6eb7633-d788-47f0-ae96-a4e87dae5325" >
+		<http:listener doc:name="POST /api/bid" doc:id="9baaebc6-b611-455d-bed8-19f705dc8561" config-ref="HTTP_Listener_config" path="/api/bid" allowedMethods="POST"/>
+		<ee:transform doc:name="to Bid" doc:id="02f6ea6c-4941-4acc-8e35-b860184d34b3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Id": payload.Id default 1,
+	"Empresa": payload.Empresa default "",
+	"Profissional": payload.Profissional default "",
+	"ValorMercado": payload.ValorMercado default 0
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<aggregators:time-based-aggregator doc:name="Time based aggregator" doc:id="d59d02cb-c004-4ced-93fb-4f8c6a4389af" name="TimeBased" period="60" objectStore="Table_Aggregator">
+			<aggregators:incremental-aggregation >
+				<ee:transform doc:name="Payload to Json" doc:id="b0397cbf-0419-4835-bfc3-9896281a1d5d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</aggregators:incremental-aggregation>
+		</aggregators:time-based-aggregator>
+		<os:store doc:name="Table_Func" doc:id="0887a984-c20e-4c35-8c79-f5057df686a0" key="#[payload.Id as String]" objectStore="Table_Func"/>
+		<logger level="INFO" doc:name="payload" doc:id="4624fb71-e20f-4600-96bd-b4ac7e81c584" message="#[payload]"/>
+	</flow>
+
+	<flow name="aggregate-process" doc:id="64d218b9-b0cc-4834-bc84-a77778849846" >
+		<aggregators:aggregator-listener doc:name="TimeBased" doc:id="53d28ad6-e510-4b64-8fd4-829fcfe8c996" aggregatorName="TimeBased">
+			<redelivery-policy />
+		</aggregators:aggregator-listener>
+		<flow-ref doc:name="clear-all-winners" doc:id="809d863a-beae-4c38-80b1-648dd8fb202d" name="clear-all-winners" target="_"/>
+		<ee:transform doc:name="Aggregate Winners" doc:id="e5170177-af6c-4a1f-b0b4-f1caea7ae723" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var group = payload groupBy $.Id
+---
+group pluck ($ orderBy -$.ValorMercado)[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each Winner" doc:id="fa8bc2b1-c993-44c2-8845-a63d9c1baa79" collection="#[payload]">
+			<os:store doc:name="Table_Winner" doc:id="25019f00-457a-4d2c-886f-7573168eb678" key="#[vars.counter]" objectStore="Table_Winner" />
+		</foreach>
+	</flow>
+
+</mule>

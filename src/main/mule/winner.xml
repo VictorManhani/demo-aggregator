@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/os 
+		http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+		http://www.mulesoft.org/schema/mule/http 
+		http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+		http://www.mulesoft.org/schema/mule/ee/core 
+		http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+		http://www.mulesoft.org/schema/mule/core 
+		http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+	">
+	
+	<flow name="clear-all-winners" doc:id="f2a8378c-49df-4783-ae5f-ad88a3da6f12" >
+		<http:listener doc:name="DELETE /api/winner" doc:id="f999b479-1ebc-486a-be3b-0ae878c8e51b" config-ref="HTTP_Listener_config" path="/api/winner" allowedMethods="DELETE"/>
+		<os:retrieve-all-keys doc:name="Table_Winner" doc:id="226fd34c-55f2-4b48-80e7-0d292a9e635c" objectStore="Table_Winner" target="winner_keys"/>
+		<os:clear doc:name="Table_Winner" doc:id="114f734a-aa81-4df2-829a-4a9a6f35be22" objectStore="Table_Winner"/>
+		<ee:transform doc:name="Payload to Json" doc:id="fb439bcf-5532-4770-b8ac-bb5e1acd85be" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": sizeOf(vars."winner_keys" default []) as String ++ " Winners Deleted",
+	"Status":  "Success"
+}]]>
+				</ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+
+	<flow name="get-all-winners" doc:id="c9554d26-92c1-4870-82dc-d104adff72c0" >
+		<http:listener doc:name="GET /api/winner" doc:id="e2fb2202-d18c-49f4-8d30-71ba607c5788" config-ref="HTTP_Listener_config" path="/api/winner" allowedMethods="GET" />
+		<os:retrieve-all doc:name="Winners" doc:id="6046f83a-1b05-48eb-87b8-9225682899b0" objectStore="Table_Winner" />
+		<ee:transform doc:name="Payload to Json" doc:id="3222e518-3e4d-4c92-9d43-9c7f969b56b4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var payMapped = payload pluck read($, "application/json")
+---
+payMapped]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</flow>
+
+</mule>

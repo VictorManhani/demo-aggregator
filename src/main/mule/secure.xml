@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule 
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" 
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns="http://www.mulesoft.org/schema/mule/core" 
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core 
+		http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/os 
+		http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+		http://www.mulesoft.org/schema/mule/ee/core 
+		http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+		http://www.mulesoft.org/schema/mule/validation 
+		http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+
+	<flow name="secure-flow" doc:id="765b5bb1-618e-4653-a934-de4b39cf519b" >
+		<logger level="INFO" doc:name="Start Safe" doc:id="dd6def97-f098-46c3-847e-9541e6d64640" message="Start Safe"/>
+		<logger level="INFO" doc:name="End Safe" doc:id="cb73b0bf-fc7c-4ba6-80a9-21fba50e95a4" message="End Safe"/>
+	</flow>
+
+	<flow name="secureFlow" doc:id="864b3cbd-8f61-414b-a763-be6fa1813c32" >
+		<validation:is-true doc:name="client_id" doc:id="2b4da6b2-64ad-4d49-b190-a0e4c05b87bf" expression="#[attributes.headers.client_id == p('security.client_id')]" message='#["client_id errado ein, mas vamos lá, tá quase, te restam agora só " ++ round((random() * 100000 + 1)) ++ " tentativas meu amigo(a)!"]' />
+		<validation:is-true doc:name="client_secret" doc:id="453c809c-861e-41d1-b6d7-096e4e7a3a8e" expression="#[attributes.headers.client_secret == p('security.client_secret')]" message='#["client_secret errado ein, mas vamos lá, tá quase, te restam agora só " ++ round((random() * 100000 + 1)) ++ " tentativas meu amigo(a)!"]' />
+	</flow>
+
+</mule>

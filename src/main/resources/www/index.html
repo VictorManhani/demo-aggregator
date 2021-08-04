@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  
+    <!-- CSS  -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    
+    <!-- JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <!-- <script type="text/javascript" src="js/materialize.min.js"></script> -->
+
+    <style>
+        table, td, th {
+           border: 1px dashed rgb(136, 136, 136);
+           text-align: center;
+        }
+     </style>
+
+    <title>Meetup Mulesoft - Aggregator</title>
+</head>
+
+<body align="center" onload="startTimer();">
+    <div class="container">
+        <div class="row">
+            <h1>Leilão Mule</h1>
+        </div>
+
+        <div class="row" style="background: #51A79B; color: white">
+            <div class="col s12 m6 l6 lx6" 
+                style="
+                    text-align: center; display: flex;
+                    justify-content: center; align-items: center;">
+                <h3 id="bannerTimer"></h3>
+            </div>
+            <div class="col s12 m6 l6 lx6" 
+                style="text-align: center; display: flex;
+                    justify-content: center; align-items: center;">
+                <h3 id="timer">00:00</h3>
+            </div>
+        </div>
+
+        <div class="row" style="display: flex; background: lightyellow; display: flex; flex-wrap: wrap;">
+            <div style="background: #51A1DF; margin-bottom: 20px; padding-bottom: 20px;" class="col s12 m12 l6 xl6">
+                <h3 style="color: #FFFFFF">Profissionais</h3>
+                #[vars.funcTableRows]
+            </div>
+            <div style="background: #DDDDDD;" class="col s0 m0 l6 xl6">
+                <h3>Seu Lance</h3>
+    
+                <div class="row">
+                    <div id="Select" class="input-field col s12 m12 l4 xl4">
+                        #[vars.selectOptionsBody]
+                        <label>Selecione o Profissional</label>
+                    </div>
+    
+                    <div class="input-field col s12 m12 l4 xl4">
+                        <input id="Empresa" class="validate" 
+                            placeholder="Empresa"  type="text" required="" aria-required="true">
+                        <label for="Empresa">Empresa</label>
+                    </div>
+    
+                    <div class="input-field col s12 m12 l4 xl4">
+                        <input id="ValorSalario" class="validate"
+                            type="number" pattern="[0-9]+$" 
+                            min="1090" max="15000" step="any" minlength=4 maxlength="5"
+                            placeholder="Min(1090)-Max(15000)"  value="1090" >
+                        <label for="ValorSalario">Valor do Salário</label>
+                    </div>
+    
+                    <a id="lanceBtn" class="waves-effect waves-light btn" 
+                        style="color: #FFFFFF" onclick="bidFunc()">
+                        <i class="material-icons left">cloud</i>
+                        Lance!!!
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="background: #1ed6be; color: white;">
+            <div class="col s12 m12" style="font-size: 25px !important;">
+                Vencedores do Mule Leilão!!!
+            </div>
+        </div>
+
+        <div class="row" style="background: lightyellow;">
+            <div class="col s12 m2"></div>
+
+            <div class="col s12 m8">
+                #[vars.winnerTableRows]
+            </div>
+
+            <div class="col s12 m2"></div>
+        </div>
+    </div>
+
+    <script>
+        var leilaoTime = 0;
+
+        async function bidFunc() {
+            if(leilaoTime == 0){
+                var selector = document.getElementById("selectOptions");
+                const idProfissional = selector.options[selector.selectedIndex].getAttribute("idProfissional")
+                const Profissional = selector.options[selector.selectedIndex].text;
+                const Empresa = document.getElementById("Empresa").value;
+                const ValorSalario = document.getElementById("ValorSalario").value;
+    
+                const response = await fetch('/api/bid', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        "Id": idProfissional, 
+                        "Empresa": Empresa, 
+                        "Profissional": Profissional,
+                        "ValorMercado": ValorSalario
+                    }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+    
+                const myJson = await response.json();
+    
+                alert("Lance de R$ " + ValorSalario + " feito para profissional " + Profissional);
+    
+                location.reload();
+            }else {
+                alert("Ainda não é a hora do leilão!!!");
+            }
+        }
+
+        async function clearWinners() {
+            const response = await fetch('/api/winner', {
+                method: 'DELETE',
+                body: null,
+                headers: {}
+            });
+        }
+
+        async function addFunc() {          
+            const response = await fetch('/api/func', {
+                method: 'POST',
+                body: JSON.stringify([
+                    {
+                        "Id": 1,
+                        "Profissional": "Mifael Guimarães",
+                        "ValorMercado": 1090
+                    },
+                    {
+                        "Id": 2,
+                        "Profissional": "Victor Manhani",
+                        "ValorMercado": 1090
+                    },
+                    {
+                        "Id": 3,
+                        "Profissional": "Max Muley",
+                        "ValorMercado": 1090
+                    }
+                ]),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const myJson = await response.json();
+
+            location.reload();
+        }
+
+        let timer = document.getElementById("timer");
+        let bannerTimer = document.getElementById("bannerTimer");
+        let Select = document.getElementById("Select");
+        let Empresa = document.getElementById("Empresa");
+        let ValorSalario = document.getElementById("ValorSalario");
+        let lanceBtn = document.getElementById("lanceBtn");
+
+        function setBannerTimer() {
+            let currentdate = new Date();
+            let curMins = currentdate.getMinutes();
+            let curSeconds = currentdate.getSeconds();
+            let min, seg;
+
+            if(curMins % 2 == 0){
+                leilaoTime = 0
+                bannerTimer.innerHTML = "Hora do Leilão!"
+                Select.disabled = false;
+                Empresa.disabled = false;
+                ValorSalario.disabled = false;
+                lanceBtn.disabled = false;
+                lanceBtn.classList.remove("disabled");
+            }else{
+                leilaoTime = 1
+                lanceBtn.classList.add("disabled");
+                bannerTimer.innerHTML = "Hora dos Resultados!!!"
+                Select.disabled = true;
+                Empresa.disabled = true;
+                ValorSalario.disabled = true;
+                lanceBtn.disabled = true;
+            }
+            min=0, seg=59-curSeconds;
+            return [min, seg];
+        }
+
+        function startTimer() {
+            let min, seg;
+            [min, seg] = setBannerTimer();
+            
+            function setAuctionTime () {
+                if((min > 0) || (seg > 0)){
+                    if(seg == 0){ seg = 59; min = min - 1; }
+                    else{ seg = seg - 1; }
+                    if(min.toString().length == 1){ min = "0" + min; }
+                    if(seg.toString().length == 1){ seg = "0" + seg; }
+                    timer.innerHTML = min + ":" + seg;
+                }
+                else{
+                    clearWinners();
+                    addFunc();
+                    timer.innerHTML = "00:00";
+                    [min, seg] = setBannerTimer();
+                    location.reload();
+                    // alert("Funcs added!!!")
+                }
+            }
+
+            setInterval(setAuctionTime, 1000);
+        }
+
+    </script>
+    <script>
+        M.AutoInit();
+    </script>
+
+</body>
+</html>
