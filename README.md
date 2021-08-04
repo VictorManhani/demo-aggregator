@@ -5,6 +5,10 @@
 
 - Enter in project directory with ``` cd demo-aggregator ```
 
+- Open Anypoint Studio
+
 - Import project at Anypoint Studio
 
-- At Anypoint Studio, run the project
+- Run the project
+
+- Search http://localhost:8081/index to enter at Leilão Page
